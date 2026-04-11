@@ -4,6 +4,7 @@ import os
 import logging
 import psutil
 import pytz
+import requests
 from datetime import datetime, timezone
 from plugins.plugin_registry import get_plugin_instance
 from utils.image_utils import compute_image_hash
@@ -99,6 +100,11 @@ class RefreshTask:
                         if self.device_config.get_config("log_system_stats"):
                             self.log_system_stats()
 
+                        # Check vacation mode before refreshing
+                        if self._is_vacation_mode_active():
+                            logger.info("Vacation mode active, skipping refresh.")
+                            continue
+
                         # handle refresh based on playlists
                         logger.info(f"Running interval refresh check. | current_time: {current_dt.strftime('%Y-%m-%d %H:%M:%S')}")
                         playlist, plugin_instance = self._determine_next_plugin(playlist_manager, latest_refresh, current_dt)
@@ -187,6 +193,35 @@ class RefreshTask:
 
         return playlist, plugin
     
+    def _is_vacation_mode_active(self):
+        """Check if vacation mode is active via Home Assistant entity state."""
+        ha_config = self.device_config.get_config("home_assistant", default={})
+        if not ha_config.get("enabled"):
+            return False
+
+        url = ha_config.get("url", "").rstrip("/")
+        token = ha_config.get("token", "")
+        entity_id = ha_config.get("vacation_entity", "")
+
+        if not url or not token or not entity_id:
+            return False
+
+        try:
+            resp = requests.get(
+                f"{url}/api/states/{entity_id}",
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=10
+            )
+            if resp.status_code == 200:
+                state = resp.json().get("state", "off")
+                return state in ("on", "true", "home", "vacation")
+            else:
+                logger.warning(f"Home Assistant returned status {resp.status_code} for entity {entity_id}")
+        except Exception as e:
+            logger.warning(f"Failed to query Home Assistant: {e}")
+
+        return False
+
     def log_system_stats(self):
         metrics = {
             'cpu_percent': psutil.cpu_percent(interval=1),

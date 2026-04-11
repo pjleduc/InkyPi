@@ -90,6 +90,7 @@ def create_playlist():
     playlist_name = data.get("playlist_name")
     start_time = data.get("start_time")
     end_time = data.get("end_time")
+    days = data.get("days", [])
 
     if not playlist_name or not playlist_name.strip():
         return jsonify({"error": "Playlist name is required"}), 400
@@ -101,7 +102,7 @@ def create_playlist():
         if playlist:
             return jsonify({"error": f"Playlist with name '{playlist_name}' already exists"}), 400
 
-        result = playlist_manager.add_playlist(playlist_name, start_time, end_time)
+        result = playlist_manager.add_playlist(playlist_name, start_time, end_time, days=days)
         if not result:
             return jsonify({"error": "Failed to create playlist"}), 500
 
@@ -125,6 +126,7 @@ def update_playlist(playlist_name):
     new_name = data.get("new_name")
     start_time = data.get("start_time")
     end_time = data.get("end_time")
+    days = data.get("days", [])
     if not new_name or not start_time or not end_time:
         return jsonify({"success": False, "error": "Missing required fields"}), 400
 
@@ -132,7 +134,7 @@ def update_playlist(playlist_name):
     if not playlist:
         return jsonify({"error": f"Playlist '{playlist_name}' does not exist"}), 400
 
-    result = playlist_manager.update_playlist(playlist_name, new_name, start_time, end_time)
+    result = playlist_manager.update_playlist(playlist_name, new_name, start_time, end_time, days=days)
     if not result:
         return jsonify({"error": "Failed to delete playlist"}), 500
     device_config.write_config()

@@ -81,6 +81,57 @@ def save_settings():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
     return jsonify({"success": True, "message": "Saved settings."})
 
+@settings_bp.route('/save_home_assistant', methods=['POST'])
+def save_home_assistant():
+    device_config = current_app.config['DEVICE_CONFIG']
+
+    try:
+        data = request.get_json()
+        ha_config = {
+            "enabled": data.get("enabled", False),
+            "url": data.get("url", "").strip().rstrip("/"),
+            "token": data.get("token", "").strip(),
+            "vacation_entity": data.get("vacation_entity", "").strip(),
+        }
+        device_config.update_value("home_assistant", ha_config, write=True)
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+    return jsonify({"success": True, "message": "Home Assistant settings saved."})
+
+
+@settings_bp.route('/test_home_assistant', methods=['POST'])
+def test_home_assistant():
+    try:
+        import requests as req
+        data = request.get_json()
+        url = data.get("url", "").strip().rstrip("/")
+        token = data.get("token", "").strip()
+        entity_id = data.get("vacation_entity", "").strip()
+
+        if not url or not token or not entity_id:
+            return jsonify({"error": "URL, token, and entity ID are all required"}), 400
+
+        resp = req.get(
+            f"{url}/api/states/{entity_id}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10
+        )
+        if resp.status_code == 200:
+            state = resp.json().get("state", "unknown")
+            friendly_name = resp.json().get("attributes", {}).get("friendly_name", entity_id)
+            return jsonify({"success": True, "message": f"Connected! '{friendly_name}' is currently '{state}'."})
+        elif resp.status_code == 401:
+            return jsonify({"error": "Authentication failed. Check your Long-Lived Access Token."}), 400
+        elif resp.status_code == 404:
+            return jsonify({"error": f"Entity '{entity_id}' not found in Home Assistant."}), 400
+        else:
+            return jsonify({"error": f"Home Assistant returned status {resp.status_code}"}), 400
+    except req.exceptions.ConnectionError:
+        return jsonify({"error": "Could not connect to Home Assistant. Check the URL."}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @settings_bp.route('/shutdown', methods=['POST'])
 def shutdown():
     data = request.get_json() or {}

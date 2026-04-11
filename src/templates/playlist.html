@@ -182,6 +182,16 @@
             }
         }
 
+        function getSelectedDays() {
+            return Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => parseInt(cb.value));
+        }
+
+        function setDayCheckboxes(days) {
+            document.querySelectorAll('.day-checkbox').forEach(cb => {
+                cb.checked = days.includes(parseInt(cb.value));
+            });
+        }
+
         // Open modal for **creating** a new playlist
         function openCreateModal() {
             document.getElementById("modalTitle").textContent = "New Playlist";
@@ -189,6 +199,7 @@
             document.getElementById("editingPlaylistName").value = ""; // Empty value means it's new
             document.getElementById("start_time").value = "00:00";
             document.getElementById("end_time").value = "24:00";
+            setDayCheckboxes([]);
 
             document.getElementById("saveButton").setAttribute("onclick", "createPlaylist()");
             document.getElementById("deleteButton").classList.add("hidden"); // Hide delete button
@@ -197,12 +208,13 @@
         }
 
         // Open modal for **editing** an existing playlist
-        function openEditModal(playlistName, startTime, endTime) {
+        function openEditModal(playlistName, startTime, endTime, days) {
             document.getElementById("modalTitle").textContent = "Update Playlist";
             document.getElementById("playlist_name").value = playlistName;
             document.getElementById("editingPlaylistName").value = playlistName;
             document.getElementById("start_time").value = startTime;
             document.getElementById("end_time").value = endTime;
+            setDayCheckboxes(days || []);
 
             document.getElementById("saveButton").setAttribute("onclick", "updatePlaylist()");
             document.getElementById("deleteButton").classList.remove("hidden"); // Show delete button
@@ -224,6 +236,7 @@
             let playlistName = document.getElementById("playlist_name").value.trim();
             let startTime = document.getElementById("start_time").value;
             let endTime = document.getElementById("end_time").value;
+            let days = getSelectedDays();
 
             try {
                 const response = await fetch("{{ url_for('playlist.create_playlist') }}", {
@@ -231,7 +244,7 @@
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ playlist_name: playlistName, start_time: startTime, end_time: endTime })
+                    body: JSON.stringify({ playlist_name: playlistName, start_time: startTime, end_time: endTime, days: days })
                 });
 
                 const result = await response.json();
@@ -253,6 +266,7 @@
             let newName = document.getElementById("playlist_name").value;
             let startTime = document.getElementById("start_time").value;
             let endTime = document.getElementById("end_time").value;
+            let days = getSelectedDays();
 
             try {
                 const response = await fetch("{{ url_for('playlist.update_playlist', playlist_name='') }}" + oldName, {
@@ -260,7 +274,7 @@
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ new_name: newName, start_time: startTime, end_time: endTime })
+                    body: JSON.stringify({ new_name: newName, start_time: startTime, end_time: endTime, days: days })
                 });
 
                 const result = await response.json();
@@ -402,8 +416,15 @@
             {% for playlist in playlist_config.playlists %}
             <div class="playlist-item {% if playlist.name == playlist_config.active_playlist %}active{% endif %}">
                     <div class="playlist-header">
-                        <span class="playlist-title">{{ playlist.name }}</span>
-                        <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}')"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon"></button>
+                        <span class="playlist-title">{{ playlist.name }}
+                            {% if playlist.days %}
+                                {% set day_abbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                                <small style="color: var(--text-secondary); font-weight: normal; margin-left: 6px;">
+                                    {% for d in playlist.days %}{{ day_abbr[d] }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                </small>
+                            {% endif %}
+                        </span>
+                        <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}', {{ playlist.days | default([]) | tojson }})"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon"></button>
                     </div>
                     <!-- Plugin List -->
                     <div class="plugin-list">
@@ -485,6 +506,19 @@
                     <select id="start_time" name="start_time" class="form-input"></select>
                     <span> - </span>
                     <select id="end_time" name="end_time" class="form-input"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Active Days:</label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                        <label><input type="checkbox" class="day-checkbox" value="0"> Mon</label>
+                        <label><input type="checkbox" class="day-checkbox" value="1"> Tue</label>
+                        <label><input type="checkbox" class="day-checkbox" value="2"> Wed</label>
+                        <label><input type="checkbox" class="day-checkbox" value="3"> Thu</label>
+                        <label><input type="checkbox" class="day-checkbox" value="4"> Fri</label>
+                        <label><input type="checkbox" class="day-checkbox" value="5"> Sat</label>
+                        <label><input type="checkbox" class="day-checkbox" value="6"> Sun</label>
+                    </div>
+                    <small style="color: var(--text-secondary);">Leave all unchecked for every day.</small>
                 </div>
             </form>
             <div class="buttons-container">
