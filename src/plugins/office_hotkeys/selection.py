@@ -1,6 +1,7 @@
 """Pure shortcut-selection logic for the Office Hotkeys plugin.
 
-Stdlib-only and free of any InkyPi imports, so it is fast and safe to unit-test.
+No InkyPi render-stack imports — depends only on stdlib and the local
+constants module (itself stdlib-only), so it is fast and safe to unit-test.
 """
 import json
 import time
