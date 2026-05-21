@@ -42,7 +42,7 @@
   {"app": "excel", "category": "Data (Sort & Filter)", "keys": ["Alt", "D", "S"], "description": "Open Sort dialog", "level": "intermediate", "weight": 4},
   {"app": "excel", "category": "Data (Sort & Filter)", "keys": ["Ctrl", "Shift", "L"], "description": "Toggle AutoFilter on selection", "level": "beginner", "weight": 5},
   {"app": "excel", "category": "Data (Sort & Filter)", "keys": ["Alt", "Down Arrow"], "description": "Open AutoFilter drop-down", "level": "intermediate", "weight": 4},
-  {"app": "excel", "category": "Data (Sort & Filter)", "keys": ["Alt", "A", "E"], "description": "Remove Duplicates (ribbon)", "level": "advanced", "weight": 2},
+  {"app": "excel", "category": "Data (Sort & Filter)", "keys": ["Alt", "A", "M"], "description": "Remove Duplicates (ribbon)", "level": "advanced", "weight": 2},
   {"app": "excel", "category": "Data (Sort & Filter)", "keys": ["Alt", "A", "T"], "description": "Clear all filters (ribbon)", "level": "intermediate", "weight": 3},
   {"app": "excel", "category": "Data (Sort & Filter)", "keys": ["Ctrl", "T"], "description": "Create a Table from selection", "level": "advanced", "weight": 5},
   {"app": "excel", "category": "Data (Sort & Filter)", "keys": ["Ctrl", "E"], "description": "Flash Fill — auto-complete a pattern", "level": "advanced", "weight": 4},
