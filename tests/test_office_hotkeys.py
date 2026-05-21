@@ -16,3 +16,23 @@ def test_every_app_has_categories_and_a_theme():
 
 def test_excel_has_eight_categories():
     assert len(constants.CATEGORY_ORDER["excel"]) == 8
+
+
+from src.plugins.office_hotkeys import selection
+
+
+def test_pick_category_rotates_by_hour():
+    cats = ["A", "B", "C"]
+    assert selection.pick_category(cats, now=0) == "A"
+    assert selection.pick_category(cats, now=3600) == "B"
+    assert selection.pick_category(cats, now=2 * 3600) == "C"
+    assert selection.pick_category(cats, now=3 * 3600) == "A"  # wraps
+
+
+def test_pick_category_handles_empty_list():
+    assert selection.pick_category([], now=123) is None
+
+
+def test_load_shortcuts_reads_the_bundled_dataset():
+    data = selection.load_shortcuts("src/plugins/office_hotkeys/data/shortcuts.json")
+    assert isinstance(data, list) and len(data) > 0
