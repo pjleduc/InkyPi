@@ -5,6 +5,8 @@ Stdlib-only and free of any InkyPi imports, so it is fast and safe to unit-test.
 import json
 import time
 
+from . import constants
+
 
 def load_shortcuts(data_path):
     """Load and return the list of shortcut dicts from a JSON file."""
@@ -24,3 +26,10 @@ def pick_category(categories, now=None):
         now = time.time()
     index = int(now // 3600) % len(categories)
     return categories[index]
+
+
+def filter_by_level(shortcuts, min_level):
+    """Keep only shortcuts at `min_level` or harder (a difficulty floor)."""
+    floor = constants.LEVELS.index(min_level)
+    return [s for s in shortcuts
+            if constants.LEVELS.index(s["level"]) >= floor]
