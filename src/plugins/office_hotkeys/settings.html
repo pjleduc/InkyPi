@@ -19,7 +19,7 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    if (typeof pluginSettings !== 'undefined') {
+    if (loadPluginSettings) {
       if (pluginSettings.app) {
         document.getElementById('app').value = pluginSettings.app;
       }
