@@ -1,3 +1,5 @@
+import random
+
 from src.plugins.office_hotkeys import constants
 from src.plugins.office_hotkeys import selection
 
@@ -53,3 +55,48 @@ def test_filter_by_level_is_a_floor():
 
 def test_filter_by_level_empty_when_nothing_qualifies():
     assert selection.filter_by_level([_sc("beginner")], "advanced") == []
+
+
+def test_weighted_sample_returns_distinct_items_within_pool():
+    pool = [_sc("advanced") for _ in range(5)]
+    rng = random.Random(42)
+    picked = selection.weighted_sample(pool, 3, rng)
+    assert len(picked) == 3
+    assert all(any(p is item for item in pool) for p in picked)
+    assert len({id(p) for p in picked}) == 3  # distinct objects
+
+
+def test_weighted_sample_caps_at_pool_size():
+    pool = [_sc("advanced"), _sc("advanced")]
+    assert len(selection.weighted_sample(pool, 8, random.Random(1))) == 2
+
+
+def test_weighted_pick_favours_high_weight():
+    heavy = {**_sc("advanced"), "weight": 5, "description": "heavy"}
+    light = {**_sc("advanced"), "weight": 1, "description": "light"}
+    rng = random.Random(7)
+    hits = sum(1 for _ in range(400)
+               if selection.weighted_pick([heavy, light], rng) is heavy)
+    assert hits > 200  # heavy should dominate
+
+
+def test_select_for_screen_returns_hero_and_list_from_one_category():
+    data = selection.load_shortcuts("src/plugins/office_hotkeys/data/shortcuts.json")
+    screen = selection.select_for_screen(data, "excel", "advanced",
+                                         now=0, rng=random.Random(0))
+    assert screen is not None
+    assert screen["app"] == "excel"
+    assert screen["category"] in constants.CATEGORY_ORDER["excel"]
+    assert screen["hero"]["level"] == "advanced"
+    assert screen["hero"] not in screen["list"]
+    assert 1 <= screen["category_index"] <= screen["category_count"] == 8
+    for item in screen["list"]:
+        assert item["category"] == screen["category"]
+        assert item["level"] == "advanced"
+
+
+def test_select_for_screen_falls_through_empty_categories():
+    data = [{**_sc("advanced"), "category": "Pivot Tables"} for _ in range(3)]
+    screen = selection.select_for_screen(data, "excel", "advanced",
+                                         now=0, rng=random.Random(0))
+    assert screen["category"] == "Pivot Tables"

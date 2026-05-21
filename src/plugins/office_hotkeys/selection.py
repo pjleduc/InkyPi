@@ -4,6 +4,7 @@ No InkyPi render-stack imports — depends only on stdlib and the local
 constants module (itself stdlib-only), so it is fast and safe to unit-test.
 """
 import json
+import random
 import time
 
 from . import constants
@@ -34,3 +35,69 @@ def filter_by_level(shortcuts, min_level):
     floor = constants.LEVELS.index(min_level)
     return [s for s in shortcuts
             if constants.LEVELS.index(s["level"]) >= floor]
+
+
+def weighted_pick(items, rng):
+    """Return one item, chosen with probability proportional to its `weight`."""
+    total = sum(i["weight"] for i in items)
+    threshold = rng.uniform(0, total)
+    running = 0
+    for item in items:
+        running += item["weight"]
+        if threshold <= running:
+            return item
+    return items[-1]
+
+
+def weighted_sample(items, count, rng):
+    """Return up to `count` distinct items, weighted, without replacement."""
+    pool = list(items)
+    chosen = []
+    while pool and len(chosen) < count:
+        pick = weighted_pick(pool, rng)
+        chosen.append(pick)
+        pool = [x for x in pool if x is not pick]
+    return chosen
+
+
+def select_for_screen(shortcuts, app, min_level, now=None, rng=None, list_size=8):
+    """Pick one category (rotating, with fall-through) and build a screen.
+
+    Returns a dict with the category, a weight-biased hero shortcut, a list of
+    further shortcuts, and counters for the header/footer. Returns None if the
+    app has no shortcuts at or above `min_level`.
+    """
+    if rng is None:
+        rng = random.Random()
+    if now is None:
+        now = time.time()
+
+    categories = constants.CATEGORY_ORDER[app]
+    start = int(now // 3600) % len(categories)
+
+    chosen_category, pool = None, []
+    for offset in range(len(categories)):
+        category = categories[(start + offset) % len(categories)]
+        candidates = [s for s in shortcuts
+                      if s["app"] == app and s["category"] == category]
+        candidates = filter_by_level(candidates, min_level)
+        if candidates:
+            chosen_category, pool = category, candidates
+            break
+    if not pool:
+        return None
+
+    hero = weighted_pick(pool, rng)
+    rest = [s for s in pool if s is not hero]
+    items = weighted_sample(rest, list_size, rng)
+
+    return {
+        "app": app,
+        "category": chosen_category,
+        "category_index": categories.index(chosen_category) + 1,
+        "category_count": len(categories),
+        "level": min_level,
+        "hero": hero,
+        "list": items,
+        "pool_size": len(pool),
+    }
