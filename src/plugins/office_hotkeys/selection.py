@@ -5,8 +5,6 @@ Stdlib-only and free of any InkyPi imports, so it is fast and safe to unit-test.
 import json
 import time
 
-from . import constants
-
 
 def load_shortcuts(data_path):
     """Load and return the list of shortcut dicts from a JSON file."""

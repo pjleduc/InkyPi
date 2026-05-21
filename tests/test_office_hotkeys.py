@@ -1,4 +1,5 @@
 from src.plugins.office_hotkeys import constants
+from src.plugins.office_hotkeys import selection
 
 
 def test_levels_are_ordered_easy_to_hard():
@@ -16,9 +17,6 @@ def test_every_app_has_categories_and_a_theme():
 
 def test_excel_has_eight_categories():
     assert len(constants.CATEGORY_ORDER["excel"]) == 8
-
-
-from src.plugins.office_hotkeys import selection
 
 
 def test_pick_category_rotates_by_hour():
