@@ -4,7 +4,9 @@ from pathlib import Path
 from src.plugins.office_hotkeys import constants
 
 DATA = Path("src/plugins/office_hotkeys/data/shortcuts.json")
-MIN_PER_CATEGORY = {"excel": 6, "outlook": 5, "powerpoint": 5}
+MIN_PER_CATEGORY = {"excel": 12, "outlook": 10, "powerpoint": 10}
+MIN_ADVANCED = {"excel": 3, "outlook": 2, "powerpoint": 2}
+MIN_ADV_PLUS_INT = {"excel": 9, "outlook": 7, "powerpoint": 7}
 
 
 def load():
@@ -36,9 +38,20 @@ def test_every_category_meets_its_minimum():
             assert n >= MIN_PER_CATEGORY[app], f"{app}/{cat} has {n}, need {MIN_PER_CATEGORY[app]}"
 
 
-def test_every_excel_category_has_an_advanced_shortcut():
+def test_every_category_has_minimum_advanced():
     data = load()
-    for cat in constants.CATEGORY_ORDER["excel"]:
-        adv = [s for s in data if s["app"] == "excel" and s["category"] == cat
-               and s["level"] == "advanced"]
-        assert adv, f"excel/{cat} has no advanced shortcut"
+    for app, cats in constants.CATEGORY_ORDER.items():
+        for cat in cats:
+            n = sum(1 for s in data if s["app"] == app and s["category"] == cat
+                    and s["level"] == "advanced")
+            assert n >= MIN_ADVANCED[app], f"{app}/{cat} has {n} advanced, need {MIN_ADVANCED[app]}"
+
+
+def test_every_category_has_enough_advanced_plus_intermediate():
+    data = load()
+    for app, cats in constants.CATEGORY_ORDER.items():
+        for cat in cats:
+            n = sum(1 for s in data if s["app"] == app and s["category"] == cat
+                    and s["level"] in ("advanced", "intermediate"))
+            assert n >= MIN_ADV_PLUS_INT[app], \
+                f"{app}/{cat} has {n} advanced+intermediate, need {MIN_ADV_PLUS_INT[app]}"
