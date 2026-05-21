@@ -88,7 +88,7 @@ def test_select_for_screen_returns_hero_and_list_from_one_category():
     assert screen["app"] == "excel"
     assert screen["category"] in constants.CATEGORY_ORDER["excel"]
     assert screen["hero"]["level"] == "advanced"
-    assert screen["hero"] not in screen["list"]
+    assert all(item is not screen["hero"] for item in screen["list"])
     assert 1 <= screen["category_index"] <= screen["category_count"] == 8
     for item in screen["list"]:
         assert item["category"] == screen["category"]

@@ -39,6 +39,8 @@ def filter_by_level(shortcuts, min_level):
 
 def weighted_pick(items, rng):
     """Return one item, chosen with probability proportional to its `weight`."""
+    if not items:
+        raise ValueError("weighted_pick requires a non-empty list")
     total = sum(i["weight"] for i in items)
     threshold = rng.uniform(0, total)
     running = 0
