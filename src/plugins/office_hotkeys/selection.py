@@ -62,12 +62,21 @@ def weighted_sample(items, count, rng):
     return chosen
 
 
+def _level_below(level):
+    """Return the level one step easier than `level`, or None if it is the easiest."""
+    index = constants.LEVELS.index(level)
+    return constants.LEVELS[index - 1] if index > 0 else None
+
+
 def select_for_screen(shortcuts, app, min_level, now=None, rng=None, list_size=8):
     """Pick one category (rotating, with fall-through) and build a screen.
 
-    Returns a dict with the category, a weight-biased hero shortcut, a list of
-    further shortcuts, and counters for the header/footer. Returns None if the
-    app has no shortcuts at or above `min_level`.
+    The pool is the category's shortcuts at `min_level` or harder. If that pool
+    is too thin to fill the screen, it is topped up with shortcuts from the one
+    level just below `min_level` (never further) — so an Advanced screen is
+    advanced-first, filled out with intermediate shortcuts, and never shows
+    beginner "noob tips". The hero is always a genuine `min_level`-or-harder
+    shortcut. Returns None if the app has nothing at `min_level`.
     """
     if rng is None:
         rng = random.Random()
@@ -76,20 +85,29 @@ def select_for_screen(shortcuts, app, min_level, now=None, rng=None, list_size=8
 
     categories = constants.CATEGORY_ORDER[app]
     start = int(now // 3600) % len(categories)
+    target = list_size + 1  # one hero + the list
 
-    chosen_category, pool = None, []
+    chosen_category, at_level, cat_items = None, [], []
     for offset in range(len(categories)):
         category = categories[(start + offset) % len(categories)]
-        candidates = [s for s in shortcuts
-                      if s["app"] == app and s["category"] == category]
-        candidates = filter_by_level(candidates, min_level)
-        if candidates:
-            chosen_category, pool = category, candidates
+        cat_items = [s for s in shortcuts
+                     if s["app"] == app and s["category"] == category]
+        at_level = filter_by_level(cat_items, min_level)
+        if at_level:
+            chosen_category = category
             break
-    if not pool:
+    if chosen_category is None:
         return None
 
-    hero = weighted_pick(pool, rng)
+    # Top up a thin pool with the single level just below the floor.
+    topped_up = []
+    if len(at_level) < target:
+        below = _level_below(min_level)
+        if below:
+            topped_up = [s for s in cat_items if s["level"] == below]
+    pool = at_level + topped_up
+
+    hero = weighted_pick(at_level, rng)
     rest = [s for s in pool if s is not hero]
     items = weighted_sample(rest, list_size, rng)
 

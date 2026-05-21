@@ -92,7 +92,7 @@ def test_select_for_screen_returns_hero_and_list_from_one_category():
     assert 1 <= screen["category_index"] <= screen["category_count"] == 8
     for item in screen["list"]:
         assert item["category"] == screen["category"]
-        assert item["level"] == "advanced"
+        assert item["level"] in ("advanced", "intermediate")
 
 
 def test_select_for_screen_falls_through_empty_categories():
@@ -100,3 +100,29 @@ def test_select_for_screen_falls_through_empty_categories():
     screen = selection.select_for_screen(data, "excel", "advanced",
                                          now=0, rng=random.Random(0))
     assert screen["category"] == "Pivot Tables"
+
+
+def test_select_for_screen_tops_up_thin_pool_with_one_level_down():
+    data = ([{**_sc("advanced"), "category": "Navigation"}]
+            + [{**_sc("intermediate"), "category": "Navigation"} for _ in range(10)])
+    screen = selection.select_for_screen(data, "excel", "advanced",
+                                         now=0, rng=random.Random(0))
+    levels = {screen["hero"]["level"]} | {s["level"] for s in screen["list"]}
+    assert "intermediate" in levels            # thin advanced pool was topped up
+    assert screen["hero"]["level"] == "advanced"   # hero is still a real advanced one
+
+
+def test_select_for_screen_topup_never_reaches_beginner_at_advanced():
+    data = ([{**_sc("advanced"), "category": "Navigation"}]
+            + [{**_sc("intermediate"), "category": "Navigation"} for _ in range(2)]
+            + [{**_sc("beginner"), "category": "Navigation"} for _ in range(10)])
+    screen = selection.select_for_screen(data, "excel", "advanced",
+                                         now=0, rng=random.Random(0))
+    levels = {screen["hero"]["level"]} | {s["level"] for s in screen["list"]}
+    assert "beginner" not in levels            # top-up stops one level down
+
+
+def test_level_below():
+    assert selection._level_below("advanced") == "intermediate"
+    assert selection._level_below("intermediate") == "beginner"
+    assert selection._level_below("beginner") is None
